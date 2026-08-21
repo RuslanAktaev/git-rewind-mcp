@@ -1,0 +1,32 @@
+{
+  "name": "@ruslan-aktaev/git-rewind-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that answers how and when code appeared, straight from git history",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "git-rewind-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.7.0"
+  }
+}
