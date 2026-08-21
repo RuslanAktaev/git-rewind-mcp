@@ -19,7 +19,7 @@ async function git(args: string[], cwd: string): Promise<string> {
 
 const server = new McpServer({ name: 'git-rewind', version: '0.1.0' });
 
-server.registerTool(
+но.registerTool(
   'health',
   {
     description:
