@@ -2,10 +2,20 @@
 import { McpServer } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 
-const server = new McpServer({ name: 'git-rewind', version: '0.1.0' });
+import { runIndex } from './indexer.js';
 
-// Инструменты поиска по merge request'ам появятся здесь.
-// Инструменты истории git (health, file_history) удалены осознанно: агент
-// с доступом к шеллу делает то же самое сам. Код лежит в коммите a308772.
+// Индексация — отдельная команда, а не часть запуска сервера: она идёт минуты
+// и должна запускаться осознанно.
+if (process.argv[2] === 'index') {
+  runIndex().catch((error: Error) => {
+    process.stderr.write(`${error.message}\n`);
+    process.exit(1);
+  });
+} else {
+  const server = new McpServer({ name: 'git-rewind', version: '0.1.0' });
 
-serveStdio(() => server);
+  // Инструмент поиска по merge request'ам появится здесь.
+  // Инструменты истории git удалены осознанно, код лежит в коммите a308772.
+
+  serveStdio(() => server);
+}
