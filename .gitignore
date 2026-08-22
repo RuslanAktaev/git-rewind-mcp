@@ -1,3 +1,7 @@
 node_modules/
 dist/
 *.tsbuildinfo
+
+# данные эксперимента — код заказчика, наружу не кладём
+*.jsonl
+spike/*.jsonl
