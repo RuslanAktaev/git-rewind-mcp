@@ -148,6 +148,85 @@ export class Store {
     }
   }
 
+  /**
+   * Ближайшие по смыслу. vec0 отдаёт расстояние, а порог в спеке записан
+   * в косинусах — при distance_metric=cosine это одно и то же наоборот.
+   */
+  searchVector(embedding: Float32Array, limit: number): Hit[] {
+    const rows = this.db
+      .prepare(
+        `select mr.project_id, mr.project, mr.iid, mr.title, mr.description, mr.state,
+                mr.created_at, mr.updated_at, mr.url, vec.distance
+         from mr_vec vec join mr on mr.id = vec.rowid
+         where vec.embedding match ? and k = ?
+         order by vec.distance`
+      )
+      .all(new Uint8Array(embedding.buffer.slice(0)), limit) as Array<Record<string, never>>;
+    return rows.map((r) => ({
+      projectId: Number(r.project_id),
+      project: String(r.project),
+      iid: Number(r.iid),
+      title: String(r.title),
+      description: String(r.description),
+      state: String(r.state),
+      createdAt: String(r.created_at),
+      updatedAt: String(r.updated_at),
+      url: String(r.url),
+      similarity: 1 - Number(r.distance),
+      source: 'vector' as const
+    }));
+  }
+
+  /** Точные слова. Редкое слово весит больше частого — это делает bm25 сам. */
+  searchWords(words: string[], limit: number): Hit[] {
+    if (words.length === 0) return [];
+    const expression = words.map((w) => `"${w}"`).join(' OR ');
+    const rows = this.db
+      .prepare(
+        `select mr.project_id, mr.project, mr.iid, mr.title, mr.description, mr.state,
+                mr.created_at, mr.updated_at, mr.url, mr.id
+         from mr_fts join mr on mr.id = mr_fts.rowid
+         where mr_fts match ? order by bm25(mr_fts) limit ?`
+      )
+      .all(expression, limit) as Array<Record<string, never>>;
+    return rows.map((r) => ({
+      projectId: Number(r.project_id),
+      project: String(r.project),
+      iid: Number(r.iid),
+      title: String(r.title),
+      description: String(r.description),
+      state: String(r.state),
+      createdAt: String(r.created_at),
+      updatedAt: String(r.updated_at),
+      url: String(r.url),
+      // Оценку по словам не с чем сравнивать: bm25 несравним между запросами.
+      // Досчитывается в search.ts по сохранённому вектору.
+      similarity: Number.NaN,
+      source: 'words' as const
+    }));
+  }
+
+  /** Сохранённый вектор записи — чтобы досчитать оценку тем, кого нашли словами. */
+  embeddingOf(projectId: number, iid: number): Float32Array | undefined {
+    const row = this.db
+      .prepare(
+        `select vec.embedding from mr_vec vec join mr on mr.id = vec.rowid
+         where mr.project_id = ? and mr.iid = ?`
+      )
+      .get(projectId, iid) as { embedding: Uint8Array } | undefined;
+    if (!row) return undefined;
+    const bytes = Uint8Array.from(row.embedding);
+    return new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4);
+  }
+
+  /** В скольких записях встречается слово. Ноль — его тут не писал никто. */
+  wordFrequency(word: string): number {
+    const row = this.db
+      .prepare('select count(*) as n from mr_fts where mr_fts match ?')
+      .get(`"${word}"`) as { n: number };
+    return row.n;
+  }
+
   count(): number {
     return (this.db.prepare('select count(*) as n from mr').get() as { n: number }).n;
   }
