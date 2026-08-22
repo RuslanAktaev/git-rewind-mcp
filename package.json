@@ -1,7 +1,7 @@
 {
   "name": "@ruslan-aktaev/git-rewind-mcp",
   "version": "0.1.0",
-  "description": "MCP server that answers how and when code appeared, straight from git history",
+  "description": "MCP server that answers whether your team has built something before, by searching GitLab merge requests",
   "type": "module",
   "license": "MIT",
   "bin": {
