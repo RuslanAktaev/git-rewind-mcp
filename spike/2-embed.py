@@ -1,5 +1,8 @@
-import json, re, sys, time, urllib.request, struct
+import json, os, re, sys, time, urllib.request, struct
 from concurrent.futures import ThreadPoolExecutor
+
+# Многоязычная модель: запросы можно писать по-русски.
+MODEL = os.environ.get('EMBED_MODEL', 'bge-m3')
 
 SRC, OUT = sys.argv[1], sys.argv[2]
 
@@ -21,7 +24,7 @@ for r in rows:
 def embed(text):
     req = urllib.request.Request(
         'http://127.0.0.1:11434/api/embeddings',
-        data=json.dumps({'model': 'nomic-embed-text', 'prompt': text}).encode(),
+        data=json.dumps({'model': MODEL, 'prompt': text}).encode(),
         headers={'Content-Type': 'application/json'})
     return json.load(urllib.request.urlopen(req, timeout=120))['embedding']
 
@@ -32,6 +35,7 @@ print(f'{len(vecs)} векторов за {time.time()-t0:.0f} c, размерн
 
 with open(OUT, 'w') as f:
     for r, v in zip(rows, vecs):
-        f.write(json.dumps({**{k: r[k] for k in ('iid','title','text','created','url')},
+        keep = ('project','iid','title','text','created','url')
+        f.write(json.dumps({**{k: r[k] for k in keep if k in r},
                             'v': [round(x, 5) for x in v]}, ensure_ascii=False) + '\n')
 print('сохранено в', OUT)
