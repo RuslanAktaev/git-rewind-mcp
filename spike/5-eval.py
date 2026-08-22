@@ -20,6 +20,17 @@ CASES = [
     ('pay with cryptocurrency bitcoin',      None),
     ('thermal printer label printing',       None),
     ('nuclear reactor control panel',        None),
+    ('reset password by email',              r'reset password|forgot password'),
+    ('upload files to amazon s3',            r'\bs3\b'),
+    ('onboarding screens for new users',     r'onboarding'),
+    ('websocket real time updates',          r'socket'),
+    ('deep links into the app',              r'deep ?link'),
+    ('subscription in-app purchase',         r'in-?app purchase|subscription'),
+    ('3d printer calibration',               None),
+    ('alexa voice assistant skill',          None),
+    ('blockchain smart contract',            None),
+    ('tractor autopilot steering',           None),
+    ('medical prescription scanning',        None),
 ]
 
 rows = [json.loads(l) for l in open(sys.argv[1])]
@@ -36,7 +47,7 @@ def norm(v):
 
 vecs = [norm(r['v']) for r in rows]
 
-print(f'{"запрос":34} {"в базе":>7} {"в топ-5":>8} {"z1":>6} {"z5":>6}')
+print(f'{"запрос":34} {"в базе":>7} {"в топ-5":>8} {"косинус":>8} {"z1":>6} {"z5":>6}')
 for q, truth in CASES:
     pat = re.compile(truth, re.I) if truth else None
     in_base = sum(1 for r in rows if pat and pat.search(r['title']))
@@ -51,7 +62,7 @@ for q, truth in CASES:
     z5 = (top[4][0] - bg) / sd
     found = sum(1 for _, r in top if pat and pat.search(r['title']))
 
-    print(f'{q[:34]:34} {in_base:7} {found:8} {z:6.2f} {z5:6.2f}'
+    print(f'{q[:34]:34} {in_base:7} {found:8} {top[0][0]:8.3f} {z:6.2f} {z5:6.2f}'
           + ('' if truth else '   ← такого в базе нет'))
 
 print('\nz1 — отрыв первого результата, z5 — пятого. Порог должен разделять '
