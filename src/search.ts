@@ -19,7 +19,10 @@ const CANDIDATES = 20;
  */
 export const FOUND_CUTOFF = 0.675;
 
-const STOP = new Set(['the', 'and', 'with', 'for', 'into', 'app', 'from', 'that', 'this']);
+const STOP = new Set([
+  'the', 'and', 'with', 'for', 'into', 'app', 'from', 'that', 'this',
+  'to', 'in', 'on', 'of', 'at', 'by', 'is', 'it', 'as', 'be', 'an', 'or', 'we', 'do'
+]);
 
 export interface SearchResult {
   hits: Hit[];
@@ -32,7 +35,15 @@ export interface SearchResult {
 }
 
 export function queryWords(query: string): string[] {
-  return (query.toLowerCase().match(/[a-z][a-z0-9]{2,}/g) ?? []).filter((w) => !STOP.has(w));
+  return (query.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter(
+    (word) =>
+      word.length >= 2 &&
+      // Хотя бы одна буква: иначе в запрос попадают годы и номера задач.
+      // Начинаться с буквы не обязано — иначе теряются «2fa» и «s3», а это
+      // как раз те редкие точные слова, ради которых поиск по словам и нужен.
+      /[a-z]/.test(word) &&
+      !STOP.has(word)
+  );
 }
 
 function cosine(a: Float32Array, b: Float32Array): number {
