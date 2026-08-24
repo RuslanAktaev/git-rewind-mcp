@@ -227,6 +227,12 @@ export class Store {
     return row.n;
   }
 
+  /** Все заголовки разом: прогону нужно посчитать эталон регуляркой. */
+  titles(): string[] {
+    const rows = this.db.prepare('select title from mr').all() as Array<{ title: string }>;
+    return rows.map((row) => String(row.title));
+  }
+
   count(): number {
     return (this.db.prepare('select count(*) as n from mr').get() as { n: number }).n;
   }

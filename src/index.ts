@@ -7,14 +7,18 @@ import * as z from 'zod/v4';
 
 import { loadConfig } from './config.js';
 import { Embedder } from './embeddings.js';
+import { runEval } from './eval.js';
 import { runIndex } from './indexer.js';
 import { FOUND_CUTOFF, search } from './search.js';
 import { Store } from './store.js';
 
 // Индексация — отдельная команда, а не часть запуска сервера: она идёт минуты
-// и должна запускаться осознанно.
-if (process.argv[2] === 'index') {
-  runIndex().catch((error: Error) => {
+// и должна запускаться осознанно. Прогон по размеченным запросам — там же:
+// без него правки поиска проверяются на глаз.
+const command = process.argv[2];
+if (command === 'index' || command === 'eval') {
+  const run = command === 'index' ? runIndex : runEval;
+  run().catch((error: Error) => {
     process.stderr.write(`${error.message}\n`);
     process.exit(1);
   });
