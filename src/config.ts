@@ -5,7 +5,7 @@
  */
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 export interface Config {
   /** Хост GitLab, например https://projects.example.com */
@@ -35,7 +35,18 @@ function readToken(): string {
   }
 }
 
+/**
+ * Файл `.env` из рабочей директории, если он там есть. Заданное снаружи сильнее:
+ * Node не перетирает уже существующие переменные значениями из файла.
+ */
+function loadEnvFile(): void {
+  const file = join(process.cwd(), '.env');
+  if (existsSync(file)) process.loadEnvFile(file);
+}
+
 export function loadConfig(): Config {
+  loadEnvFile();
+
   const host = process.env.GITLAB_HOST?.trim();
   if (!host) throw new Error('no GitLab host: set GITLAB_HOST, for example https://gitlab.com');
 

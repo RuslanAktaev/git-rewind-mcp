@@ -106,6 +106,9 @@ Three things in that output are there on purpose:
 | `EMBED_MODEL` | `bge-m3` | changing it requires rebuilding the index |
 | `INDEX_DB` | `~/.git-rewind/index.db` | the database file |
 
+These can also live in a `.env` file in the working directory — copy `.env.example` and fill
+it in. Real environment variables win over the file, and `.env` is gitignored.
+
 The server makes no assumptions about where it runs — bare `npx`, a container or a shared
 service only change these values, never the code.
 
@@ -123,7 +126,7 @@ from inventing answers, and it has a margin of `0.018` — almost anything you c
 can move it. `eval` runs 21 labelled queries through the real search path:
 
 ```bash
-GITLAB_HOST=https://gitlab.example.com node dist/index.js eval
+node dist/index.js eval          # reads .env, or pass GITLAB_HOST inline
 ```
 
 ```
@@ -138,8 +141,8 @@ cutoff has stopped separating hits from misses and needs to be revisited, whatev
 says.
 
 It needs a built index and a running ollama, which is why it is a command rather than a unit
-test. It takes about 1.6 seconds. `GITLAB_HOST` is required only because config loading is
-shared with indexing — `eval` never touches GitLab.
+test. It takes about 1.6 seconds. `GITLAB_HOST` has to be set only because config loading is
+shared with indexing — `eval` itself never touches GitLab.
 
 ### Layout
 
