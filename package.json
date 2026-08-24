@@ -4,6 +4,11 @@
   "description": "MCP server that answers whether your team has built something before, by searching GitLab merge requests",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RuslanAktaev/git-rewind-mcp.git"
+  },
+  "homepage": "https://github.com/RuslanAktaev/git-rewind-mcp#readme",
   "bin": {
     "git-rewind-mcp": "dist/index.js"
   },

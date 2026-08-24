@@ -1,6 +1,12 @@
-# git-rewind-mcp
+<p align="center">
+  <img src="assets/logo.png" alt="git-rewind-mcp" width="200">
+</p>
 
-An MCP server that answers one question: **have we built this before, anywhere?**
+<h1 align="center">git-rewind-mcp</h1>
+
+<p align="center">
+  An MCP server that answers one question: <b>have we built this before, anywhere?</b>
+</p>
 
 You pick up a task and want to know whether someone in the company already solved it —
 in this project, in the one next door, three years ago. The server searches merge request
