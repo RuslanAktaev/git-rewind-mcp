@@ -32,19 +32,41 @@ Embeddings are computed locally. Nothing is sent to a third party.
 
 ## Build the index
 
-The server searches a local SQLite file, not GitLab. Build it once:
+The server searches a local SQLite file, not GitLab. Build it once, with ollama running:
 
 ```bash
 GITLAB_HOST=https://gitlab.example.com npx @ruslan-aktaev/git-rewind-mcp index
 ```
 
-It walks every project you are a member of, fetches merge requests, embeds their titles and
-writes vectors and a full-text index into one file. On our instance a full run is 22 366
-merge requests from 106 projects, about 100 MB, roughly 13 minutes. Run it again later and
-it only fetches what changed.
+It walks every project you are a member of, fetches their merge requests, embeds the titles
+and writes vectors and a full-text index into a single file:
+
+```
+model bge-m3: 1024 dimensions
+building the index from scratch
+projects: 142
+  [1/142] acme/wallet-react-native: 2269 merge requests
+  [2/142] acme/insurance-nextjs: 418 merge requests
+  ...
+done: 22366 merge requests from 106 projects, 22366 in the index
+database: /Users/you/.git-rewind/index.db
+```
+
+On our instance that is 22 366 merge requests from 106 projects, about 100 MB and roughly
+13 minutes — most of it spent embedding. The first thing it does is ask the model for one
+test vector, so a missing ollama or a missing model fails in a second rather than after ten
+minutes of fetching.
+
+**Keeping it fresh.** Run the same command again. It remembers when it last ran and asks
+GitLab only for merge requests updated since, so a repeat run takes about a minute even when
+nothing changed. There is no scheduler: the index is only as fresh as the last run.
+
+**Rebuilding from scratch.** Delete the file and run `index` again. You need this if you
+switch `EMBED_MODEL` — vectors from different models are not comparable, so the server
+refuses to open an index built by another model instead of silently returning nonsense.
 
 The index stays on your machine. It is not part of the npm package and is never published —
-it holds customer project titles.
+it holds your customers' project and branch names.
 
 ## Connect it to an agent
 
