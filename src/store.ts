@@ -180,7 +180,9 @@ export class Store {
   /** Точные слова. Редкое слово весит больше частого — это делает bm25 сам. */
   searchWords(words: string[], limit: number): Hit[] {
     if (words.length === 0) return [];
-    const expression = words.map((w) => `"${w}"`).join(' OR ');
+    // Только по заголовку: путь проекта тоже лежит в индексе, и без ограничения
+    // «react» совпадает с каждым MR из репозитория `*-react-native`.
+    const expression = words.map((w) => `title:"${w}"`).join(' OR ');
     const rows = this.db
       .prepare(
         `select mr.project_id, mr.project, mr.iid, mr.title, mr.description, mr.state,
@@ -223,7 +225,7 @@ export class Store {
   wordFrequency(word: string): number {
     const row = this.db
       .prepare('select count(*) as n from mr_fts where mr_fts match ?')
-      .get(`"${word}"`) as { n: number };
+      .get(`title:"${word}"`) as { n: number };
     return row.n;
   }
 
