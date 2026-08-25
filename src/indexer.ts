@@ -3,7 +3,7 @@
  * по базе. Разовая операция на минуты, поэтому команда, а не часть запуска
  * сервера. Со второго раза дотягивает только изменившееся.
  */
-import { loadConfig } from './config.js';
+import { loadIndexConfig } from './config.js';
 import { Embedder, cleanText } from './embeddings.js';
 import { GitLab, type MergeRequest } from './gitlab.js';
 import { Store } from './store.js';
@@ -20,7 +20,7 @@ async function absorb(store: Store, embedder: Embedder, mrs: MergeRequest[]): Pr
 }
 
 export async function runIndex(): Promise<void> {
-  const config = loadConfig();
+  const config = loadIndexConfig();
   const embedder = new Embedder(config.ollamaUrl, config.model);
 
   // Пробный вектор заодно проверяет, что ollama жива и модель на месте, —

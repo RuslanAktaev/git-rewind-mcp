@@ -25,8 +25,8 @@ verification flow` without sharing a single word with it.
   ollama serve
   ollama pull bge-m3
   ```
-- **A GitLab token** with the `read_api` scope. Put it in `~/.gitlab-token` (one line) or
-  pass it as `GITLAB_TOKEN`.
+- **A GitLab token** with the `read_api` scope — for building the index, not for searching
+  it. Put it in `~/.gitlab-token` (one line) or pass it as `GITLAB_TOKEN`.
 
 Embeddings are computed locally. Nothing is sent to a third party.
 
@@ -71,7 +71,7 @@ it holds your customers' project and branch names.
 ## Connect it to an agent
 
 ```bash
-claude mcp add git-rewind -e GITLAB_HOST=https://gitlab.example.com -- npx @ruslan-aktaev/git-rewind-mcp
+claude mcp add git-rewind -- npx @ruslan-aktaev/git-rewind-mcp
 ```
 
 Or, in a client config file:
@@ -81,14 +81,15 @@ Or, in a client config file:
   "mcpServers": {
     "git-rewind": {
       "command": "npx",
-      "args": ["@ruslan-aktaev/git-rewind-mcp"],
-      "env": { "GITLAB_HOST": "https://gitlab.example.com" }
+      "args": ["@ruslan-aktaev/git-rewind-mcp"]
     }
   }
 }
 ```
 
-The server speaks stdio and starts instantly — the database opens on the first search.
+The server speaks stdio and starts instantly — the database opens on the first search. It
+needs no GitLab host and no token: searching reads the local index, and only `index` talks to
+GitLab. Set `INDEX_DB` here if the file does not live in the default place.
 
 ## The tool
 
@@ -119,14 +120,14 @@ Three things in that output are there on purpose:
 
 ## Configuration
 
-| Variable | Default | What it is |
-|---|---|---|
-| `GITLAB_HOST` | — | required, e.g. `https://gitlab.example.com` |
-| `GITLAB_TOKEN` | — | token with `read_api`; falls back to a file |
-| `GITLAB_TOKEN_FILE` | `~/.gitlab-token` | where to read the token from |
-| `OLLAMA_URL` | `http://127.0.0.1:11434` | where ollama listens |
-| `EMBED_MODEL` | `bge-m3` | changing it requires rebuilding the index |
-| `INDEX_DB` | `~/.git-rewind/index.db` | the database file |
+| Variable | Default | What it is | Needed by |
+|---|---|---|---|
+| `GITLAB_HOST` | — | e.g. `https://gitlab.example.com` | `index` |
+| `GITLAB_TOKEN` | — | token with `read_api`; falls back to a file | `index` |
+| `GITLAB_TOKEN_FILE` | `~/.gitlab-token` | where to read the token from | `index` |
+| `OLLAMA_URL` | `http://127.0.0.1:11434` | where ollama listens | both |
+| `EMBED_MODEL` | `bge-m3` | changing it requires rebuilding the index | both |
+| `INDEX_DB` | `~/.git-rewind/index.db` | the database file | both |
 
 These can also live in a `.env` file in the working directory — copy `.env.example` and fill
 it in. Real environment variables win over the file, and `.env` is gitignored.
@@ -148,7 +149,7 @@ from inventing answers, and it has a margin of `0.018` — almost anything you c
 can move it. `eval` runs 21 labelled queries through the real search path:
 
 ```bash
-node dist/index.js eval          # reads .env, or pass GITLAB_HOST inline
+node dist/index.js eval
 ```
 
 ```
@@ -163,8 +164,7 @@ cutoff has stopped separating hits from misses and needs to be revisited, whatev
 says.
 
 It needs a built index and a running ollama, which is why it is a command rather than a unit
-test. It takes about 1.6 seconds. `GITLAB_HOST` has to be set only because config loading is
-shared with indexing — `eval` itself never touches GitLab.
+test. It takes about 1.6 seconds. Like the server, it never touches GitLab.
 
 ### Layout
 

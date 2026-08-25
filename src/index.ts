@@ -5,7 +5,7 @@ import { McpServer } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 
-import { loadConfig } from './config.js';
+import { loadSearchConfig } from './config.js';
 import { Embedder } from './embeddings.js';
 import { runEval } from './eval.js';
 import { runIndex } from './indexer.js';
@@ -74,7 +74,7 @@ function serveMcp(): void {
         };
       }
 
-      const config = loadConfig();
+      const config = loadSearchConfig();
       if (!existsSync(config.dbPath)) {
         return {
           content: [

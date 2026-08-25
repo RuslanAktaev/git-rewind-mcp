@@ -5,7 +5,7 @@
  * Команда, а не тест на `node:test`: нужна живая база на сто мегабайт и
  * запущенная ollama, в отрыве от них проверять нечего.
  */
-import { loadConfig } from './config.js';
+import { loadSearchConfig } from './config.js';
 import { Embedder } from './embeddings.js';
 import { FOUND_CUTOFF, search } from './search.js';
 import { Store } from './store.js';
@@ -45,7 +45,7 @@ const TOP = 5;
 const say = (line: string) => process.stdout.write(line + '\n');
 
 export async function runEval(): Promise<void> {
-  const config = loadConfig();
+  const config = loadSearchConfig();
   const embedder = new Embedder(config.ollamaUrl, config.model);
   const probe = await embedder.embed('probe');
   const store = await Store.open(config.dbPath, probe.length, config.model);
