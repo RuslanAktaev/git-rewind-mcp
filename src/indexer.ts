@@ -5,10 +5,19 @@
  */
 import { loadConfig } from './config.js';
 import { Embedder, cleanText } from './embeddings.js';
-import { GitLab } from './gitlab.js';
+import { GitLab, type MergeRequest } from './gitlab.js';
 import { Store } from './store.js';
 
 const say = (line: string) => process.stdout.write(line + '\n');
+
+/** Считает векторы пачкой и кладёт merge request'ы в базу одной транзакцией. */
+async function absorb(store: Store, embedder: Embedder, mrs: MergeRequest[]): Promise<void> {
+  const texts = mrs.map((mr) => cleanText(mr.title, mr.description));
+  const vectors = await embedder.embedMany(texts);
+  store.transaction(() => {
+    mrs.forEach((mr, n) => store.upsert(mr, vectors[n], texts[n]));
+  });
+}
 
 export async function runIndex(): Promise<void> {
   const config = loadConfig();
@@ -26,26 +35,46 @@ export async function runIndex(): Promise<void> {
   // Отметку берём до выкачки: MR, изменённый во время прогона, попадёт
   // в следующий раз, а не потеряется между двумя отметками.
   const startedAt = new Date().toISOString();
-  say(previousRun ? `updating what changed since ${previousRun}` : 'building the index from scratch');
-
-  const projects = await gitlab.projects();
-  say(`projects: ${projects.length}`);
 
   let indexed = 0;
   let touched = 0;
-  for (const [i, project] of projects.entries()) {
-    const mrs = await gitlab.mergeRequests(project, previousRun);
-    if (mrs.length === 0) continue;
-    touched++;
 
-    const texts = mrs.map((mr) => cleanText(mr.title, mr.description));
-    const vectors = await embedder.embedMany(texts);
-    store.transaction(() => {
-      mrs.forEach((mr, n) => store.upsert(mr, vectors[n], texts[n]));
-    });
+  if (previousRun) {
+    // Дозагрузка идёт одним запросом по всем проектам сразу. Обход проектов
+    // по одному стоил четыре минуты, из которых почти всё — ожидание пустых
+    // ответов от проектов, где ничего не менялось.
+    say(`updating what changed since ${previousRun}`);
+    const changed = await gitlab.updatedSince(previousRun);
 
-    indexed += mrs.length;
-    say(`  [${i + 1}/${projects.length}] ${project.path_with_namespace}: ${mrs.length} merge requests`);
+    const byProject = new Map<string, MergeRequest[]>();
+    for (const mr of changed) {
+      const list = byProject.get(mr.project);
+      if (list) list.push(mr);
+      else byProject.set(mr.project, [mr]);
+    }
+
+    for (const [project, mrs] of byProject) {
+      await absorb(store, embedder, mrs);
+      indexed += mrs.length;
+      touched++;
+      say(`  ${project}: ${mrs.length} merge requests`);
+    }
+  } else {
+    // Первая сборка: глобальный эндпоинт отдаёт всё, что видно токену, а нам
+    // нужны проекты, где пользователь состоит, — поэтому идём по ним.
+    say('building the index from scratch');
+    const projects = await gitlab.projects();
+    say(`projects: ${projects.length}`);
+
+    for (const [i, project] of projects.entries()) {
+      const mrs = await gitlab.mergeRequests(project);
+      if (mrs.length === 0) continue;
+
+      await absorb(store, embedder, mrs);
+      indexed += mrs.length;
+      touched++;
+      say(`  [${i + 1}/${projects.length}] ${project.path_with_namespace}: ${mrs.length} merge requests`);
+    }
   }
 
   store.setMeta('indexed_at', startedAt);

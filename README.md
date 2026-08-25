@@ -58,8 +58,8 @@ test vector, so a missing ollama or a missing model fails in a second rather tha
 minutes of fetching.
 
 **Keeping it fresh.** Run the same command again. It remembers when it last ran and asks
-GitLab only for merge requests updated since, so a repeat run takes about a minute even when
-nothing changed. There is no scheduler: the index is only as fresh as the last run.
+GitLab, in a single request, only for merge requests updated since — a repeat run takes a
+couple of seconds. There is no scheduler: the index is only as fresh as the last run.
 
 **Rebuilding from scratch.** Delete the file and run `index` again. You need this if you
 switch `EMBED_MODEL` — vectors from different models are not comparable, so the server

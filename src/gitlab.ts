@@ -68,25 +68,53 @@ export class GitLab {
     return this.pages<Project>('/api/v4/projects?membership=true&simple=true&order_by=id');
   }
 
-  /**
-   * Merge request'ы одного проекта. `updatedAfter` превращает полный обход
-   * в дозагрузку: со второго раза тянется только изменившееся.
-   */
-  async mergeRequests(project: Project, updatedAfter?: string): Promise<MergeRequest[]> {
-    const since = updatedAfter ? `&updated_after=${encodeURIComponent(updatedAfter)}` : '';
+  /** Merge request'ы одного проекта — нужны при первой сборке индекса. */
+  async mergeRequests(project: Project): Promise<MergeRequest[]> {
     const raw = await this.pages<Record<string, unknown>>(
-      `/api/v4/projects/${project.id}/merge_requests?state=all${since}`
+      `/api/v4/projects/${project.id}/merge_requests?state=all`
     );
-    return raw.map((m) => ({
-      projectId: project.id,
-      project: project.path_with_namespace,
-      iid: m.iid as number,
-      title: (m.title as string) ?? '',
-      description: ((m.description as string) ?? '').slice(0, 800),
-      state: m.state as string,
-      createdAt: (m.created_at as string).slice(0, 10),
-      updatedAt: m.updated_at as string,
-      url: m.web_url as string
-    }));
+    return raw.map((m) => toMergeRequest(m, project.id, project.path_with_namespace));
   }
+
+  /**
+   * Всё изменившееся по всем проектам разом. Обход проектов по одному стоит
+   * 142 запроса и почти четыре минуты, из которых 137 возвращают пустоту, —
+   * здесь тот же ответ приходит одним запросом за полторы секунды.
+   */
+  async updatedSince(since: string): Promise<MergeRequest[]> {
+    const raw = await this.pages<Record<string, unknown>>(
+      `/api/v4/merge_requests?scope=all&state=all&updated_after=${encodeURIComponent(since)}`
+    );
+    return raw.map((m) => toMergeRequest(m, m.project_id as number, projectPathOf(m)));
+  }
+}
+
+/**
+ * Пути проекта в ответе глобального эндпоинта нет, но он есть в ссылке на MR:
+ * `spaces/team/app!2280`. Запасной вариант — вычленить его из web_url.
+ */
+function projectPathOf(m: Record<string, unknown>): string {
+  const full = (m.references as { full?: string } | undefined)?.full;
+  if (full?.includes('!')) return full.slice(0, full.lastIndexOf('!'));
+  return String(m.web_url ?? '')
+    .replace(/^https?:\/\/[^/]+\//, '')
+    .replace(/\/-\/merge_requests\/\d+$/, '');
+}
+
+function toMergeRequest(
+  m: Record<string, unknown>,
+  projectId: number,
+  project: string
+): MergeRequest {
+  return {
+    projectId,
+    project,
+    iid: m.iid as number,
+    title: (m.title as string) ?? '',
+    description: ((m.description as string) ?? '').slice(0, 800),
+    state: m.state as string,
+    createdAt: (m.created_at as string).slice(0, 10),
+    updatedAt: m.updated_at as string,
+    url: m.web_url as string
+  };
 }
