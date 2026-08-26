@@ -102,6 +102,8 @@ Cyrillic input and asks for a translation. Your agent translates the question on
 words of the query, and how many merge requests contain each: two=24, factor=4, authentication=18, otp=16
 both search methods agree on 8 candidates
 
+Include the links below in your answer — the user needs to open them.
+
 0.762 [vector] acme/wallet-react-native !246 (2024-07-24)
   Implement OTP-based 2FA verification flow
   https://gitlab.example.com/acme/wallet-react-native/-/merge_requests/246
@@ -117,6 +119,10 @@ Three things in that output are there on purpose:
 - **Word counts.** `otp=16` means sixteen merge requests contain that word; a zero means
   nobody on the team ever wrote it. Semantic search alone cannot tell you that.
 - **`[vector]` / `[words]` / `[both]`** — which half of the search found the record.
+
+The line about links is aimed at the agent, not at you: left to itself it retells the findings
+in its own words and drops the links, and an answer you cannot open is an answer you cannot
+check.
 
 ## Configuration
 

@@ -44,7 +44,9 @@ function serveMcp(): void {
         'The query MUST be in English — the index holds English titles only, and a query in ' +
         'another language misses what it should find. Translate the user question first. ' +
         'Returns merge requests with links; judge from the titles whether they really answer ' +
-        'the question, the server does not decide that for you.',
+        'the question, the server does not decide that for you. ' +
+        'Always pass the links through to the user, next to whatever you conclude — the link ' +
+        'is the only way for them to check the answer, and a summary without one is unusable.',
       inputSchema: z.object({
         query: z
           .string()
@@ -120,6 +122,11 @@ function serveMcp(): void {
           `both search methods agree on ${result.agreement} candidates`,
           ''
         ];
+        // Просьба повторяется в самом ответе, а не только в описании инструмента:
+        // модель читает описание один раз до вызова, а результат — прямо перед тем,
+        // как писать человеку. Наблюдение живое: без этой строки агент пересказывал
+        // находки своими словами и ссылки терял.
+        lines.push('Include the links below in your answer — the user needs to open them.', '');
         for (const hit of result.hits) {
           lines.push(
             `${hit.similarity.toFixed(3)} [${hit.source}] ${hit.project} !${hit.iid} (${hit.createdAt})`,
