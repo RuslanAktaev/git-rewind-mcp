@@ -17,6 +17,47 @@ does not decide that for you.
 Search is semantic, so `two-factor authentication OTP` finds `Implement OTP-based 2FA
 verification flow` without sharing a single word with it.
 
+## Why not just search GitLab?
+
+Fair question, and it was measured rather than argued. GitLab's own merge request search
+takes exact words — every word of the query has to occur in one title, matched as a substring,
+with no synonyms, no stemming and no relevance ranking. An agent can paper over that by firing
+several wordings at it. So the two were put side by side on 13 labelled topics: this server
+answered each with one query, while an agent that had never seen the index wrote five keyword
+variants per topic and fired all of them at the API.
+
+| | this server | GitLab API + an agent guessing words |
+|---|---|---|
+| topics whose merge requests were found | 13 of 13 | 12 of 13 |
+| queries | 13 | 65 |
+| wall clock | ~1 s | ~146 s |
+| titles returned | 65 | 521 |
+| of those, on topic | 71% | 43% |
+| context per query | ~150 tokens | ~1,200 filtered, ~16,200 raw |
+
+Two of those rows carry the verdict.
+
+**Noise.** A merge request comes back from the API with 50 fields; two of them are useful here.
+Filtering that down to titles and links takes a shell and a correct `jq` pipeline, which a
+client without a shell does not have. Unfiltered, one query costs 16 thousand tokens and a
+handful of wordings costs eighty — for a question a compact answer settles in a hundred and
+fifty.
+
+**Guessing.** Keyword search finds a feature only if you already use the word the team used in
+the title. The agent's variants were good, and mostly the question's own words are the title's
+words too — but on one topic in thirteen they diverged, and the API returned nothing at all,
+which reads exactly like "we never built this".
+
+What this is *not* about is reach. A token reaches every project it can see without cloning
+anything, so "the merge requests are unreachable from a laptop" would be false. The argument
+for this server is a short, ranked, low-noise answer and a calibrated *no* — not access, and
+not recall. Where keyword search stays better: an exact rare string, and freshness, since it
+queries GitLab live while this index is only as new as its last run.
+
+Honest limits of the comparison: 13 topics is a small sample, the labelled queries were
+written by someone who had seen the index, and "on topic" was judged by a regular expression
+over titles, which is blunt in both directions.
+
 ## Requirements
 
 - **Node.js 22.13+** — the server uses the built-in `node:sqlite` module.
