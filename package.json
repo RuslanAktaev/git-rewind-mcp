@@ -1,0 +1,38 @@
+{
+  "name": "@ruslan-aktaev/git-rewind-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that answers whether your team has built something before, by searching GitLab merge requests",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RuslanAktaev/git-rewind-mcp.git"
+  },
+  "homepage": "https://github.com/RuslanAktaev/git-rewind-mcp#readme",
+  "bin": {
+    "git-rewind-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "sqlite-vec": "^0.1.9",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.7.0"
+  }
+}

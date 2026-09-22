@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# токен и хост — наружу не кладём, .env.example лежит рядом как образец
+.env
+.env.local
+
+# данные эксперимента — код заказчика, наружу не кладём
+*.jsonl
+spike/*.jsonl
